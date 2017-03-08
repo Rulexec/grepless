@@ -6,6 +6,8 @@ exports.generatorSingle = generatorSingle;
 
 exports.generatorToList = generatorToList;
 
+exports.race = race;
+
 function reduceF(array, f, firstF, defaultIfEmptyF) {
 	if (!array.length) return defaultIfEmptyF();
 
@@ -18,42 +20,6 @@ function reduceF(array, f, firstF, defaultIfEmptyF) {
 	return acc;
 }
 
-function GeneratorValue(value, generator) {
-	this.value = value;
-	this.next = generator;
-}
-function Generator(run) {
-  this.next = run;
-	this.continueWith = function(f, g) {
-		return new Generator(function() {
-			return run.apply(null, arguments).bind(function(genValue) {
-				if (genValue) {
-					if (genValue.next) {
-						this.cont(null, new GeneratorValue(genValue.value, genValue.next.continueWith(f)));
-					} else {
-						return f(genValue.value).bind(gen => new GeneratorValue(genValue.value, gen));
-					}
-				} else {
-					return (g || f)().bind(function(gen) {
-						if (gen) return gen.next();
-						else this.cont(null, null);
-					});
-				}
-			});
-		});
-	};
-	this.mapValue = function(f) {
-		return new Generator(function() {
-			return run.apply(null, arguments).bind(function(genValue) {
-				if (genValue) {
-					this.cont(null, new GeneratorValue(f(genValue.value), genValue.next && genValue.next.mapValue(f)));
-				} else {
-					this.cont(null, null);
-				}
-			});
-		});
-	};
-}
 
 function generatorEmpty() {
 	return new Generator(function() { return M.pure(null, null); });
@@ -83,3 +49,20 @@ function generatorToList(generator) {
 		return generator.next().bind(processValue);
 	});
 }
+
+// Like M.parallel, but provides only result from first completed promise,
+// ignores the rest (TODO: cancel the rest)
+function race(ps) {
+  return new M(function(callback) {
+    var finished = false;
+
+    ps.forEach(function(m) {
+      m.run(function() {
+        if (finished) return;
+        else finished = true;
+
+        callback.apply(null, arguments);
+      });
+    });
+  });
+};

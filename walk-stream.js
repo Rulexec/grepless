@@ -16,6 +16,7 @@ function walkDepthFirst(filepath) {
 	).bind(gen => gen.mapValue(({path: filepath}) => filepath);
 }
 
+// There must be prefix tree, not set of all visited paths
 function walkDepthFirstImpl(initialIgnoreSet, filepath) { return M.pureM(function() {
 	let absolutePath = path.resolve(filepath);
 
