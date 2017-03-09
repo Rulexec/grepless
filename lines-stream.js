@@ -9,6 +9,8 @@ var fsM = require('./fsM.js'),
 
 		AsyncCoroutine = require('./asyncmc');
 
+exports.linesStream = linesStream;
+
 function linesStream(buffersStream) {
 	return buffersStream.transform(new AsyncCoroutine(transformer.bind(null, Immutable.List())));
 
@@ -16,8 +18,8 @@ function linesStream(buffersStream) {
 		if (!maybeBuffer) {
 			let line = joinBuffers(buffers).toString('utf8');
 
-			if (buffers.length) { // allow empty line
-				return M.pure(null, new AsyncCoroutine.Value(AsyncCoroutine.single(line), null));
+			if (buffers.size) { // allow empty line
+				return M.pure(null, new AsyncCoroutine.Value(line, null));
 			} else {
 				return M.pure(null, null);
 			}

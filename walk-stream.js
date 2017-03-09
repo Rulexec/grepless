@@ -6,27 +6,27 @@ var fsM = require('./fsM.js'),
 
 		util = require('./util'),
 		reduceF = util.reduceF,
-		generatorEmpty = util.generatorEmpty,
-		generatorSingle = util.generatorSingle;
+
+		AsyncCoroutine = require('./asyncmc');
 
 exports.walkDepthFirst = walkDepthFirst;
 
 function walkDepthFirst(filepath) {
 	return walkDepthFirstImpl(Immutable.Set(), filepath
-	).bind(gen => gen.mapValue(({path: filepath}) => filepath);
+	).bind(gen => gen.mapValue(({path: filepath}) => filepath));
 }
 
 // There must be prefix tree, not set of all visited paths
 function walkDepthFirstImpl(initialIgnoreSet, filepath) { return M.pureM(function() {
 	let absolutePath = path.resolve(filepath);
 
-	if (initialIgnoreSet.has(absolutePath)) return M.pure(null, generatorEmpty());
+	if (initialIgnoreSet.has(absolutePath)) return M.pure(null, AsyncCoroutine.empty());
 
 	ignoreSet = initialIgnoreSet.add(absolutePath);
 
 	return fsM.lstat(filepath).bind(function(stat) {
 		if (stat.isFile()) {
-			this.cont(null, generatorSingle({ignoreSet, path: filepath}));
+			this.cont(null, AsyncCoroutine.single({ignoreSet, path: filepath}));
 		} else if (stat.isDirectory()) {
 			return processDir(filepath);
 		} else if (stat.isSymbolicLink()) {
@@ -35,7 +35,7 @@ function walkDepthFirstImpl(initialIgnoreSet, filepath) { return M.pureM(functio
 			});
 		} else {
 			console.error('unknown file type, ignored', filepath, stat);
-			this.cont(null, generatorEmpty());
+			this.cont(null, AsyncCoroutine.empty());
 		}
 	});
 
@@ -43,13 +43,17 @@ function walkDepthFirstImpl(initialIgnoreSet, filepath) { return M.pureM(functio
 		return fsM.readdir(dirpath).bind(function(filepaths) {
 			return reduceF(filepaths, function(m, filepath) {
 				return m.fmap(function(gen) {
-					return gen.continueWith(function(lastValue) {
+					return gen.continueWith(continueWithLast, continueEmpty);
+
+					function continueWithLast(lastValue) {
+						if (!lastValue) debugger;
 						return walkDepthFirstImpl(lastValue.ignoreSet, path.join(dirpath, filepath));
-					}, function() {
+					}
+					function continueEmpty() {
 						return walkDepthFirstImpl(ignoreSet, path.join(dirpath, filepath));
-					});
+					}
 				});
-			}, filepath => walkDepthFirstImpl(ignoreSet, path.join(dirpath, filepath)), () => M.pure(null, generatorEmpty()));
+			}, filepath => walkDepthFirstImpl(ignoreSet, path.join(dirpath, filepath)), () => M.pure(null, AsyncCoroutine.empty()));
 		});
 	}
 }); }
