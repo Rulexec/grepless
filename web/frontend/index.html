@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset='utf-8'>
+	<title>Grepless</title>
+
+	<script src='lib/asyncm.js'></script>
+	<script src='lib/asyncmc.js'></script>
+
+	<script src='js/packaging.js'></script>
+	<script src='js/templating.js'></script>
+
+	<script src='js/ui/search-box.js'></script>
+	<script src='js/ui/lines-list.js'></script>
+	<script src='js/data-provider.js'></script>
+
+	<script src='js/main.js'></script>
+</head>
+
+<body>
+
+<div id='grepless'></div>
+
+<div id='templates' style='display:none;'>
+
+<div id='search-box-template' class='search-block'>
+	<input class='regexp-checkbox' type='checkbox'>
+	<input class='search-input' type='text'>
+	<button class='do-search-button'>Search</button>
+	<span class='loading-indicator' style='display:none;'>Loading…</span>
+</div>
+
+<div id='lines-list-template' class='result-lines'><ul class='lines-list'></ul></div>
+<li id='lines-list-line-template'><span class='file-path'></span>:<span class='line-number'></span> <span class='line-text'></span></li>
+
+</div>
+
+</body>
+</html>

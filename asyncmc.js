@@ -1,6 +1,10 @@
-var M = require('asyncm');
+(function(M){
 
-module.exports = AsyncCoroutine;
+if (typeof module !== 'undefined') {
+	module.exports = AsyncCoroutine;
+} else {
+	window.AsyncCoroutine = AsyncCoroutine;
+}
 
 function AsyncCoroutineValue(value, asyncCoroutine) {
 	if (!(this instanceof AsyncCoroutineValue)) throw new Error();
@@ -142,6 +146,38 @@ function AsyncCoroutine(run) {
 
 		return this.transform(transformator);
 	};
+	// Returns Async<R>, reducer: (R, T) → R, initState: R
+	this.reduceStream = function(reducer, initState) {
+		function handleStream(state, cor) {
+			if (!cor || !cor.next) return M.pure(null, state);
+
+			let newState = reducer(state, cor.value);
+
+			return cor.next.next().bind(handleStream.bind(null, newState));
+		}
+
+		return this.next().bind(handleStream.bind(null, initState));
+	};
+	// Returns Async<E, R>, reducer: (R, T) → Async<E, R>, initState: R
+	this.reduceStreamM = function(reducer, initState) {
+		function handleStream(state, cor) {
+			if (!cor || !cor.next) return M.pure(null, state);
+
+			let m = reducer(state, cor.value);
+
+			if (m instanceof M) {
+				return m.bind(continueWithNewState);
+			} else {
+				return continueWithNewState(m);
+			}
+
+			function continueWithNewState(newState) {
+				return cor.next.next().bind(handleStream.bind(null, newState));
+			}
+		}
+
+		return this.next().bind(handleStream.bind(null, initState));
+	};
 }
 AsyncCoroutine.Value = AsyncCoroutineValue;
 
@@ -167,3 +203,5 @@ AsyncCoroutine.MapValue = function(result, state) {
 AsyncCoroutine.FilterMapValue = function(value) {
 	this.value = value;
 };
+
+})(typeof M === 'undefined' ? require('asyncm') : M);
