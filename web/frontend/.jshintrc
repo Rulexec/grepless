@@ -1,0 +1,14 @@
+{
+	"extends": "../../.jshintrc",
+	"browser": true,
+
+	"globals": {
+		"M": false,
+		"AsyncCoroutine": false,
+
+		"in_package": false,
+		"instantiate_template": false,
+
+		"Grepless": false
+	}
+}

@@ -1,8 +1,6 @@
 var M = require('asyncm');
 
 exports.reduceF = reduceF;
-exports.generatorEmpty = generatorEmpty;
-exports.generatorSingle = generatorSingle;
 
 exports.generatorToList = generatorToList;
 
@@ -18,14 +16,6 @@ function reduceF(array, f, firstF, defaultIfEmptyF) {
 	}
 
 	return acc;
-}
-
-
-function generatorEmpty() {
-	return new Generator(function() { return M.pure(null, null); });
-}
-function generatorSingle(x) {
-	return new Generator(function() { return M.pure(null, new GeneratorValue(x, null)); });
 }
 
 function generatorToList(generator) {
@@ -65,4 +55,4 @@ function race(ps) {
       });
     });
   });
-};
+}

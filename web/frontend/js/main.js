@@ -4,10 +4,7 @@ function main() {
 	    SearchBoxView = Grepless.Web.UI.SearchBox.View,
 			LinesListView = Grepless.Web.UI.LinesList.View;
 
-	let dataProvider = new DataProvider(),
-	    state = {
-				//
-			}
+	let dataProvider = new DataProvider();
 
 	let linesListView = new LinesListView();
 
@@ -24,11 +21,11 @@ function main() {
 				        value: queryText}
 			}).bind(function(result) {
 				return linesListView.loadFrom(result.linesStream);
-			}).run(function(error, result) {
+			}).run(function(error) {
 				// RACE, but it will be replaced by searches list
 				searchBoxView.changeState({type: SearchBoxView.STATE.NORMAL});
 
-				error && console.error(error);
+				if (error) console.error(error);
 			});
 		}
 	});

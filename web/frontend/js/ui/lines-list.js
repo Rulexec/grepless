@@ -2,7 +2,7 @@ in_package('Grepless.Web.UI.LinesList', function() {
 
 this.provide(View);
 
-function View(options) {
+function View() {
 	let el = instantiate_template('lines-list-template');
 	this.getElement = function() { return el; };
 
@@ -16,7 +16,7 @@ function View(options) {
 		linesListEl.innerHTML = '';
 
 		return linesStream.reduceStreamM(function(acc, lineInfo) {
-			if (currentStream !== linesStream) return M.pure({type: View.ERROR.OTHER_STREAM_IS_LOADED})
+			if (currentStream !== linesStream) return M.pure({type: View.ERROR.OTHER_STREAM_IS_LOADED});
 
 			let lineEl = instantiate_template('lines-list-line-template');
 
@@ -26,7 +26,7 @@ function View(options) {
 
 			linesListEl.appendChild(lineEl);
 		});
-	}
+	};
 }
 View.ERROR = {
 	OTHER_STREAM_IS_LOADED: 'other-stream-is-loaded'

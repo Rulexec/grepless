@@ -1,5 +1,4 @@
-var AsyncCoroutine = require('./asyncmc'),
-    M = require('asyncm');
+var AsyncCoroutine = require('./asyncmc');
 
 var walkDepthFirst = require('./walk-stream').walkDepthFirst,
     fileCloseableBinaryStream = require('./file-stream').fileCloseableBinaryStream,
@@ -9,13 +8,13 @@ var util = require('./util'),
     generatorToList = util.generatorToList;
 
 function Grepless(options) {
-	options || (options = {});
+	if (!options) options = {};
 
-	this._testPath = options.testPath || (x => true);
+	this._testPath = options.testPath || function() { return true; };
 
 	// Returns AsyncStream<{filePath, lineNumber, line, spans: [{start, end (exclusive)}]}>
 	this.search = function(testLine) {
-		return new GreplessSearch({grepless, testLine});
+		return new GreplessSearch({grepless: this, testLine});
 	};
 }
 
@@ -73,7 +72,7 @@ function GreplessSearch(options) {
 
 let grepless = new Grepless();
 grepless.search(x => {
-	return x.indexOf('AsyncCoroutine') >= 0
+	return x.indexOf('AsyncCoroutine') >= 0;
 }).results().bind(generatorToList).run(function(error, result) {
 	console.log(error, result);
 });

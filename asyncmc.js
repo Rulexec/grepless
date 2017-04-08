@@ -1,3 +1,5 @@
+/* globals window:false, M:false */
+
 (function(M){
 
 if (typeof module !== 'undefined') {
@@ -141,7 +143,7 @@ function AsyncCoroutine(run) {
 
 			return map(value).bind(function(stream) {
 				return new AsyncCoroutineValue(stream, transformator);
-			})
+			});
 		});
 
 		return this.transform(transformator);

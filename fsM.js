@@ -15,7 +15,7 @@ function wrapSingleFs(name) {
 		return new M(function(callback) {
 			fs[name].call(fs, arg, callback);
 		});
-	}
+	};
 }
 
 function wrap(name) {

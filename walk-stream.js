@@ -22,7 +22,7 @@ function walkDepthFirstImpl(initialIgnoreSet, filepath) { return M.pureM(functio
 
 	if (initialIgnoreSet.has(absolutePath)) return M.pure(null, AsyncCoroutine.empty());
 
-	ignoreSet = initialIgnoreSet.add(absolutePath);
+	let ignoreSet = initialIgnoreSet.add(absolutePath);
 
 	return fsM.lstat(filepath).bind(function(stat) {
 		if (stat.isFile()) {
@@ -46,7 +46,6 @@ function walkDepthFirstImpl(initialIgnoreSet, filepath) { return M.pureM(functio
 					return gen.continueWith(continueWithLast, continueEmpty);
 
 					function continueWithLast(lastValue) {
-						if (!lastValue) debugger;
 						return walkDepthFirstImpl(lastValue.ignoreSet, path.join(dirpath, filepath));
 					}
 					function continueEmpty() {

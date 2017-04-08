@@ -1,13 +1,7 @@
 var M = require('asyncm'),
     Immutable = require('immutable');
 
-var fsM = require('./fsM.js'),
-    path = require('path'),
-
-		util = require('./util'),
-		generatorToList = util.generatorToList,
-
-		AsyncCoroutine = require('./asyncmc');
+var AsyncCoroutine = require('./asyncmc');
 
 exports.linesStream = linesStream;
 

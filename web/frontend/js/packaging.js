@@ -1,3 +1,5 @@
+/* exported in_package */
+
 function in_package(packagePath, fn) {
 	if (typeof packagePath === 'string') {
 		packagePath = packagePath.split('.');

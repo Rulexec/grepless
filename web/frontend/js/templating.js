@@ -1,3 +1,5 @@
+/* exported instantiate_template */
+
 function instantiate_template(id) {
 	let el = document.getElementById(id);
 

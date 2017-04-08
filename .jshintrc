@@ -1,0 +1,16 @@
+{
+  "esversion": 6,
+	"futurehostile": true,
+
+	"node": true,
+
+	"latedef": "nofunc",
+	"maxdepth": 5,
+	"maxparams": 4,
+	"noarg": true,
+	"nocomma": true,
+	"nonew": true,
+	"singleGroups": true,
+	"undef": true,
+	"unused": true
+}

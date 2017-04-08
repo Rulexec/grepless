@@ -8,8 +8,6 @@ function View(options) {
 	let el = instantiate_template('search-box-template');
 	this.getElement = function() { return el; };
 
-	let state = {type: View.STATE.NORMAL};
-
 	let doSearchButton = el.querySelector('button.do-search-button'),
 	    searchInput = el.querySelector('input.search-input'),
 			regexpCheckbox = el.querySelector('input.regexp-checkbox'),
@@ -35,7 +33,7 @@ function View(options) {
 		}[newState.type];
 
 		go();
-	}
+	};
 }
 View.STATE = {
 	NORMAL: "normal",
