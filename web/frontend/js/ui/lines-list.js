@@ -27,6 +27,12 @@ function View() {
 			linesListEl.appendChild(lineEl);
 		});
 	};
+
+	this.reset = function() {
+		currentStream = null;
+
+		linesListEl.innerHTML = '';
+	};
 }
 View.ERROR = {
 	OTHER_STREAM_IS_LOADED: 'other-stream-is-loaded'

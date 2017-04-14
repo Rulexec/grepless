@@ -5,6 +5,7 @@
 	"globals": {
 		"M": false,
 		"AsyncCoroutine": false,
+		"MUtil": false,
 
 		"in_package": false,
 		"instantiate_template": false,

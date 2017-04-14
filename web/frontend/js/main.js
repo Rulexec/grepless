@@ -8,6 +8,10 @@ function main() {
 
 	let linesListView = new LinesListView();
 
+	let searchHistory = [];
+
+	let currentSearch = null;
+
   let searchBoxView = new SearchBoxView({
 		onSearch: function({isRegexp, queryText}) {
 			// TODO: validation, but not here, pass validators to the view
@@ -16,19 +20,84 @@ function main() {
 
 			// There we need to create new search
 
-			dataProvider.search({
+			let parallel = MUtil.parallelBuilder();
+
+			let searchMethod = dataProvider.search.bind(dataProvider);
+
+			if (currentSearch) {
+				currentSearch.isCancelled = true;
+
+				if (currentSearch.search) {
+					parallel.add(currentSearch.search.cancelStream());
+					searchMethod = currentSearch.search.subSearch.bind(currentSearch.search);
+
+					searchHistory.push(currentSearch);
+					searchBoxView.toggleRevertButton(true);
+				}
+			}
+
+			let thisSearch = {
+				search: null,
+				isCancelled: false
+			};
+
+			currentSearch = thisSearch;
+
+			parallel.add(searchMethod({
 				query: {type: DataProvider.QUERY_TYPE[isRegexp ? 'REGEXP' : 'STRING'],
 				        value: queryText}
 			}).bind(function(result) {
-				return linesListView.loadFrom(result.linesStream);
-			}).run(function(error) {
-				// RACE, but it will be replaced by searches list
-				searchBoxView.changeState({type: SearchBoxView.STATE.NORMAL});
+				if (thisSearch.cancelled) return M.error('cancelled');
 
+				thisSearch.search = result;
+
+				return linesListView.loadFrom(result.linesStream);
+			}).next(function() {
+				if (thisSearch.cancelled) return;
+
+				searchBoxView.changeState({type: SearchBoxView.STATE.NORMAL});
+			}));
+
+			parallel.run().run(function(error) {
 				if (error) console.error(error);
 			});
+		},
+
+		onRevert: function() {
+			searchBoxView.changeState({type: SearchBoxView.STATE.NORMAL});
+
+			cancelCurrentSearch();
+
+			currentSearch = searchHistory.pop();
+			searchBoxView.toggleRevertButton(!!searchHistory.length);
+
+			currentSearch.isCancelled = false;
+			linesListView.loadFrom(currentSearch.search.linesStream).run(function(error) {
+				if (error) console.error(error);
+			});
+		},
+
+		onReset: function() {
+			searchBoxView.changeState({type: SearchBoxView.STATE.NORMAL});
+
+			linesListView.reset();
+
+			cancelCurrentSearch();
+			searchHistory = [];
 		}
 	});
+
+	function cancelCurrentSearch() {
+		if (currentSearch) {
+			currentSearch.isCancelled = true;
+
+			if (currentSearch.search) {
+				currentSearch.search.cancelStream().run(function(error) {
+					if (error) console.error(error);
+				});
+			}
+		}
+	}
 
 	var rootEl = document.getElementById('grepless');
 
