@@ -13,9 +13,9 @@ function linesStream(buffersStream) {
 			let line = joinBuffers(buffers).toString('utf8');
 
 			if (buffers.size) { // allow empty line
-				return M.pure(null, new AsyncCoroutine.Value(line, null));
+				return M.result(new AsyncCoroutine.Value(line, null));
 			} else {
-				return M.pure(null, null);
+				return M.result(null);
 			}
 		}
 
@@ -45,7 +45,7 @@ function linesStream(buffersStream) {
 			buffers = buffers.push(buffer.slice(pos));
 		}
 
-		return M.pure(null, new AsyncCoroutine.Value(
+		return M.result(new AsyncCoroutine.Value(
 			lines.length ? AsyncCoroutine.fromArray(lines) : null,
 			new AsyncCoroutine(transformer.bind(null, buffers))
 		));

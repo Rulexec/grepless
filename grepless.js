@@ -23,7 +23,7 @@ function GreplessSearch(options) {
 	    testLine = options.testLine;
 
 	this.results = function() {
-		return walkDepthFirst('.').bind(function(generator) {
+		return walkDepthFirst('.').result(function(generator) {
 			// all files of current directory
 			return generator.filterValues(testPath).mapValuesM(function(filePath) {
 				// filtered by testPath
@@ -70,9 +70,13 @@ function GreplessSearch(options) {
 	console.log(result[result.length - 1]);
 });*/
 
-let grepless = new Grepless();
+let grepless = new Grepless({
+	testPath: function(filePath) {
+		return filePath.slice(-3) === '.js';
+	}
+});
 grepless.search(x => {
 	return x.indexOf('AsyncCoroutine') >= 0;
-}).results().bind(generatorToList).run(function(error, result) {
-	console.log(error, result);
+}).results().result(generatorToList).run(null, function(x) {
+	throw new Error(x);
 });

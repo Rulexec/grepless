@@ -12,8 +12,11 @@ var fs = require('fs');
 
 function wrapSingleFs(name) {
 	return function(arg) {
-		return new M(function(callback) {
-			fs[name].call(fs, arg, callback);
+		return new M(function(result, error) {
+			fs[name].call(fs, arg, function(err) {
+				if (err) error(err);
+				else result.apply(null, Array.prototype.slice.call(arguments, 1));
+			});
 		});
 	};
 }
@@ -22,8 +25,11 @@ function wrap(name) {
 	return function() {
 		let args = arguments;
 
-		return new M(function(callback) {
-			fs[name].apply(fs, Array.from(args).concat(callback));
+		return new M(function(result, error) {
+			fs[name].apply(fs, Array.from(args).concat(function(err) {
+				if (err) error(err);
+				else result.apply(null, Array.prototype.slice.call(arguments, 1));
+			}));
 		});
 	};
 }

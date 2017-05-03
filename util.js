@@ -27,32 +27,37 @@ function generatorToList(generator) {
 				list.push(genValue.value);
 
 				if (genValue.next) {
-					return genValue.next.next().bind(processValue);
+					return genValue.next.next().result(processValue);
 				} else {
-					this.cont(null, list);
+					this.contResult(list);
 				}
 			} else {
-				this.cont(null, list);
+				this.contResult(list);
 			}
 		}
 
-		return generator.next().bind(processValue);
+		return generator.next().result(processValue);
 	});
 }
 
 // Like M.parallel, but provides only result from first completed promise,
 // ignores the rest (TODO: cancel the rest)
 function race(ps) {
-  return new M(function(callback) {
-    var finished = false;
+	return new M(function(result, error) {
+		var finished = false;
 
-    ps.forEach(function(m) {
-      m.run(function() {
-        if (finished) return;
-        else finished = true;
+		ps.forEach(function(m) {
+			m.run(function() {
+				if (finished) return;
+				else finished = true;
 
-        callback.apply(null, arguments);
-      });
-    });
-  });
+				result.apply(null, arguments);
+			}, function() {
+				if (finished) return;
+				else finished = true;
+
+				error.apply(null, arguments);
+			});
+		});
+	});
 }

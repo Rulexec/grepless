@@ -15,23 +15,23 @@ function AsyncCoroutineValue(value, asyncCoroutine) {
 	this.next = asyncCoroutine;
 }
 function AsyncCoroutine(run) {
-  this.next = run;
+	this.next = run;
 	// When stream is over, continues stream with f(x):Stream,
 	// where `x` is last stream value,
 	// and with g():Stream (or f():Stream), if no last value
 	this.continueWith = function(f, g) {
 		return new AsyncCoroutine(function() {
-			return run.apply(null, arguments).bind(function(corValue) {
+			return run.apply(null, arguments).result(function(corValue) {
 				if (corValue) {
 					if (corValue.next) {
-						this.cont(null, new AsyncCoroutineValue(corValue.value, corValue.next.continueWith(f, g)));
+						this.contResult(new AsyncCoroutineValue(corValue.value, corValue.next.continueWith(f, g)));
 					} else {
-						return f(corValue.value).bind(gen => new AsyncCoroutineValue(corValue.value, gen));
+						return f(corValue.value).result(gen => new AsyncCoroutineValue(corValue.value, gen));
 					}
 				} else {
-					return (g || f)().bind(function(gen) {
+					return (g || f)().result(function(gen) {
 						if (gen) return gen.next();
-						else this.cont(null, null);
+						else this.contResult(null);
 					});
 				}
 			});
@@ -40,7 +40,7 @@ function AsyncCoroutine(run) {
 	// Replaces every stream value `x` with f(x)
 	this.mapValue = function(f, state) {
 		return new AsyncCoroutine(function() {
-			return run.apply(null, arguments).bind(function(corValue) {
+			return run.apply(null, arguments).result(function(corValue) {
 				if (corValue) {
 					let r = f(corValue.value, state);
 
@@ -54,9 +54,9 @@ function AsyncCoroutine(run) {
 						newState = state;
 					}
 
-					this.cont(null, new AsyncCoroutineValue(result, corValue.next && corValue.next.mapValue(f, newState)));
+					this.contResult(new AsyncCoroutineValue(result, corValue.next && corValue.next.mapValue(f, newState)));
 				} else {
-					this.cont(null, null);
+					this.contResult(null);
 				}
 			});
 		});
@@ -64,13 +64,13 @@ function AsyncCoroutine(run) {
 	// gen: AsyncCoroutine<null + {value: T, args: arguments}, (<args> + AsyncCoroutine)>
 	this.transform = function(gen) {
 		return new AsyncCoroutine(function() {
-			return run.apply(null, arguments).bind(transforming.bind(null, gen, arguments));
+			return run.apply(null, arguments).result(transforming.bind(null, gen, arguments));
 
 			function transforming(gen, args, corValue) {
 				if (corValue) {
 					let m = gen.next({value: corValue.value, args: args});
 					
-					return m.bind(function(transformerCorValue) {
+					return m.result(function(transformerCorValue) {
 						if (transformerCorValue) {
 							let coroutineOrArgs = transformerCorValue.value,
 							    transformer = transformerCorValue.next;
@@ -78,10 +78,10 @@ function AsyncCoroutine(run) {
 							if (coroutineOrArgs instanceof AsyncCoroutine) {
 								return coroutineOrArgs.continueWith(function() {
 									if (transformer) {
-										return M.pure(null, corValue.next && corValue.next.transform(transformer));
+										return M.result(corValue.next && corValue.next.transform(transformer));
 									} else {
 										// end of stream
-										return M.pure(null, null);
+										return M.result(null);
 									}
 								}).next();
 							} else {
@@ -89,11 +89,11 @@ function AsyncCoroutine(run) {
 								          corValue.next.next.apply(null, coroutineOrArgs)
 								        : corValue.next.next();
 
-								return m.bind(transforming.bind(null, transformer, coroutineOrArgs));
+								return m.result(transforming.bind(null, transformer, coroutineOrArgs));
 							}
 						} else {
 							// cancellation of transforming
-							this.cont(null, corValue);
+							this.contResult(corValue);
 						}
 					});
 				} else {
@@ -110,9 +110,9 @@ function AsyncCoroutine(run) {
 			let value = maybeValue.value;
 
 			if (filter(value)) {
-				return M.pure(null, new AsyncCoroutineValue(AsyncCoroutine.single(value), transformator));
+				return M.result(new AsyncCoroutineValue(AsyncCoroutine.single(value), transformator));
 			} else {
-				return M.pure(null, new AsyncCoroutineValue(null, transformator));
+				return M.result(new AsyncCoroutineValue(null, transformator));
 			}
 		});
 
@@ -126,9 +126,9 @@ function AsyncCoroutine(run) {
 			    maybeMap = filterMap(value);
 
 			if (maybeMap instanceof AsyncCoroutine.FilterMapValue) {
-				return M.pure(null, new AsyncCoroutineValue(AsyncCoroutine.single(maybeMap.value), transformator));
+				return M.result(new AsyncCoroutineValue(AsyncCoroutine.single(maybeMap.value), transformator));
 			} else {
-				return M.pure(null, new AsyncCoroutineValue(null, transformator));
+				return M.result(new AsyncCoroutineValue(null, transformator));
 			}
 		});
 
@@ -141,7 +141,7 @@ function AsyncCoroutine(run) {
 
 			let value = maybeValue.value;
 
-			return map(value).bind(function(stream) {
+			return map(value).result(function(stream) {
 				return new AsyncCoroutineValue(stream, transformator);
 			});
 		});
@@ -151,50 +151,50 @@ function AsyncCoroutine(run) {
 	// Returns Async<R>, reducer: (R, T) → R, initState: R
 	this.reduceStream = function(reducer, initState) {
 		function handleStream(state, cor) {
-			if (!cor || !cor.next) return M.pure(null, state);
+			if (!cor || !cor.next) return M.result(state);
 
 			let newState = reducer(state, cor.value);
 
-			return cor.next.next().bind(handleStream.bind(null, newState));
+			return cor.next.next().result(handleStream.bind(null, newState));
 		}
 
-		return this.next().bind(handleStream.bind(null, initState));
+		return this.next().result(handleStream.bind(null, initState));
 	};
 	// Returns Async<E, R>, reducer: (R, T) → Async<E, R>, initState: R
 	this.reduceStreamM = function(reducer, initState) {
 		function handleStream(state, cor) {
-			if (!cor || !cor.next) return M.pure(null, state);
+			if (!cor || !cor.next) return M.result(state);
 
 			let m = reducer(state, cor.value);
 
 			if (m instanceof M) {
-				return m.bind(continueWithNewState);
+				return m.result(continueWithNewState);
 			} else {
 				return continueWithNewState(m);
 			}
 
 			function continueWithNewState(newState) {
-				return cor.next.next().bind(handleStream.bind(null, newState));
+				return cor.next.next().result(handleStream.bind(null, newState));
 			}
 		}
 
-		return this.next().bind(handleStream.bind(null, initState));
+		return this.next().result(handleStream.bind(null, initState));
 	};
 }
 AsyncCoroutine.Value = AsyncCoroutineValue;
 
 AsyncCoroutine.empty = function generatorEmpty() {
-	return new AsyncCoroutine(function() { return M.pure(null, null); });
+	return new AsyncCoroutine(function() { return M.result(null); });
 };
 AsyncCoroutine.single = function generatorSingle(x) {
-	return new AsyncCoroutine(function() { return M.pure(null, new AsyncCoroutineValue(x, null)); });
+	return new AsyncCoroutine(function() { return M.result(new AsyncCoroutineValue(x, null)); });
 };
 
 AsyncCoroutine.fromArray = function generatorFromArray(array) {
 	return new AsyncCoroutine(generator.bind(null, 0));
 
 	function generator(i) {
-		return M.pure(null, i < array.length ? new AsyncCoroutineValue(array[i], new AsyncCoroutine(generator.bind(null, i + 1))) : null);
+		return M.result(i < array.length ? new AsyncCoroutineValue(array[i], new AsyncCoroutine(generator.bind(null, i + 1))) : null);
 	}
 };
 
@@ -205,5 +205,37 @@ AsyncCoroutine.MapValue = function(result, state) {
 AsyncCoroutine.FilterMapValue = function(value) {
 	this.value = value;
 };
+
+AsyncCoroutine.ManualStream = ManualStream;
+
+function ManualStream() {
+	let nextResults = [];
+
+	this.feed = function(value) {
+		var count = nextResults.length;
+
+		console.log('handlers count', count);
+
+		while (count > 0) {
+			var handler = nextResults.shift();
+
+			handler(value);
+
+			count--;
+		}
+	};
+
+	this.getAsyncCoroutine = function() {
+		var cor = new AsyncCoroutine(function() {
+			return new M(function(result, error) {
+				nextResults.push(function(value) {
+					result(new AsyncCoroutineValue(value, cor));
+				});
+			});
+		});
+
+		return cor;
+	};
+}
 
 })(typeof M === 'undefined' ? require('asyncm') : M);

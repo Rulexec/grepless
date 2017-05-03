@@ -11,26 +11,26 @@ function Closeable(options) {
 	let onClosedWaiters = [];
 
 	this.close = function(closingError) {
-		if (closed) return M.pure(null, false, closedWith);
+		if (closed) return M.result(false, closedWith);
 
 		if (!closingError) closingError = new Error('closed');
 
-		return onCloseRequest(closingError).bind(function(result, realClosedWith) {
+		return onCloseRequest(closingError).result(function(result, realClosedWith) {
 			setImmediate(notifyClosed);
 
 			if (typeof result === 'boolean') {
 				closed = true;
 				closedWith = realClosedWith;
 
-				this.cont(null, result, closedWith);
+				this.contResult(result, closedWith);
 			} else {
-				this.cont(null, null, realClosedWith);
+				this.contResult(null, realClosedWith);
 			}
 		});
 	};
 
 	this.onClosed = function() {
-		if (closed) return M.pure(null, true, closedWith);
+		if (closed) return M.result(true, closedWith);
 
 		return new M(function(callback) {
 			onClosedWaiters.push(callback);

@@ -1,11 +1,11 @@
 var fsM = require('./fsM.js'),
 
-		util = require('./util'),
+    util = require('./util'),
 
-		race = util.race,
+    race = util.race,
 
-		Closeable = require('./closeable'),
-		AsyncCoroutine = require('./asyncmc');
+    Closeable = require('./closeable'),
+    AsyncCoroutine = require('./asyncmc');
 
 exports.fileBinaryStream = fileBinaryStream;
 exports.fileCloseableBinaryStream = fileCloseableBinaryStream;
@@ -40,8 +40,10 @@ function fileBinaryStream(fd, closeable, opts) {
 		var buffer = Buffer.allocUnsafe(BUFFER_SIZE);
 
 		return race([
-			closeable.onClosed().bind(function(really, closingError) { this.cont(closingError || new Error('closed')); }),
-			fsM.read(fd, buffer, 0, BUFFER_SIZE, offset).bind(function(bytesRead) {
+			closeable.onClosed().result(function(really, closingError) {
+				this.contError(closingError || new Error('closed'));
+			}),
+			fsM.read(fd, buffer, 0, BUFFER_SIZE, offset).result(function(bytesRead) {
 				if (bytesRead === 0) {
 					return null;
 				}

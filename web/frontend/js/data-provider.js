@@ -32,12 +32,12 @@ function DataProvider() {
 
 		var mockStream = SEARCH_MOCKS[mockId];
 
-		return M.pure(null, {
+		return M.result({
 			subSearch: function() {
 				return self.search(1);
 			},
 			linesStream: mockStream,
-			cancelStream: function() { console.log('cancelled'); return M.pure(null); }
+			cancelStream: function() { console.log('cancelled'); return M.result(); }
 		});
 	};
 }

@@ -2,7 +2,7 @@ function main() {
 	let DataProvider = Grepless.Web.DataProvider,
 
 	    SearchBoxView = Grepless.Web.UI.SearchBox.View,
-			LinesListView = Grepless.Web.UI.LinesList.View;
+	    LinesListView = Grepless.Web.UI.LinesList.View;
 
 	let dataProvider = new DataProvider();
 
@@ -12,7 +12,7 @@ function main() {
 
 	let currentSearch = null;
 
-  let searchBoxView = new SearchBoxView({
+	let searchBoxView = new SearchBoxView({
 		onSearch: function({isRegexp, queryText}) {
 			// TODO: validation, but not here, pass validators to the view
 
@@ -20,15 +20,12 @@ function main() {
 
 			// There we need to create new search
 
-			let parallel = MUtil.parallelBuilder();
-
 			let searchMethod = dataProvider.search.bind(dataProvider);
 
 			if (currentSearch) {
-				currentSearch.isCancelled = true;
+				currentSearch.cancel();
 
 				if (currentSearch.search) {
-					parallel.add(currentSearch.search.cancelStream());
 					searchMethod = currentSearch.search.subSearch.bind(currentSearch.search);
 
 					searchHistory.push(currentSearch);
@@ -38,29 +35,33 @@ function main() {
 
 			let thisSearch = {
 				search: null,
-				isCancelled: false
+				isCancelled: false,
+				searchRunning: null,
+				cancel: function() {
+					thisSearch.isCancelled = true;
+
+					thisSearch.searchRunning.cancel().run();
+
+					if (thisSearch.search) {
+						thisSearch.search.cancelStream().run();
+					}
+				}
 			};
 
 			currentSearch = thisSearch;
 
-			parallel.add(searchMethod({
+			thisSearch.searchRunning = searchMethod({
 				query: {type: DataProvider.QUERY_TYPE[isRegexp ? 'REGEXP' : 'STRING'],
 				        value: queryText}
-			}).bind(function(result) {
+			}).result(function(result) {
 				if (thisSearch.cancelled) return M.error('cancelled');
 
 				thisSearch.search = result;
 
 				return linesListView.loadFrom(result.linesStream);
-			}).next(function() {
-				if (thisSearch.cancelled) return;
-
+			}).resultOrError(function() {
 				searchBoxView.changeState({type: SearchBoxView.STATE.NORMAL});
-			}));
-
-			parallel.run().run(function(error) {
-				if (error) console.error(error);
-			});
+			}).run();
 		},
 
 		onRevert: function() {
@@ -72,9 +73,7 @@ function main() {
 			searchBoxView.toggleRevertButton(!!searchHistory.length);
 
 			currentSearch.isCancelled = false;
-			linesListView.loadFrom(currentSearch.search.linesStream).run(function(error) {
-				if (error) console.error(error);
-			});
+			linesListView.loadFrom(currentSearch.search.linesStream).run();
 		},
 
 		onReset: function() {
@@ -92,9 +91,7 @@ function main() {
 			currentSearch.isCancelled = true;
 
 			if (currentSearch.search) {
-				currentSearch.search.cancelStream().run(function(error) {
-					if (error) console.error(error);
-				});
+				currentSearch.search.cancelStream().run();
 			}
 		}
 	}

@@ -16,7 +16,7 @@ function View() {
 		linesListEl.innerHTML = '';
 
 		return linesStream.reduceStreamM(function(acc, lineInfo) {
-			if (currentStream !== linesStream) return M.pure({type: View.ERROR.OTHER_STREAM_IS_LOADED});
+			if (currentStream !== linesStream) return M.error({type: View.ERROR.OTHER_STREAM_IS_LOADED});
 
 			let lineEl = instantiate_template('lines-list-line-template');
 
